@@ -22,6 +22,12 @@ app.post('/build', (req, res) => {
     res.redirect(303, '/');
 });
 
+app.get('/notify_agent', (req, res) => {
+    console.log(`Commit hash: ${req.query.host}`);
+    console.log(`Build command: ${req.query.port}`);
+    res.send('Success');
+});
+
 app.use((req, res) => {
     res.status(404);
     res.render('404');
