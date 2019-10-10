@@ -25,7 +25,7 @@ app.post('/build', (req, res) => {
 app.get('/notify_agent', (req, res) => {
     console.log(`Commit hash: ${req.query.host}`);
     console.log(`Build command: ${req.query.port}`);
-    res.send('Success');
+    res.json({ status: 'Success' });
 });
 
 app.use((req, res) => {
