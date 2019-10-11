@@ -23,12 +23,20 @@
             const commitHash = commitHashInput.value;
             const buildCommand = buildCommandInput.value;
             if (commitHash && buildCommand) {
+                commitHashInput.value = '';
+                buildCommandInput.value = '';
                 postData('http://localhost:9000/build', {
                     commit_hash: commitHash,
                     build_command: buildCommand
                 })
                     .then(res => {
                         console.log('result: ', res);
+                        const { id, status } = res;
+                        if (status === 'Occupied') {
+                            alert('All servers are occupied. Please try again later');
+                            return;
+                        }
+                        addRow('table', commitHash, status, `build/${id}`);
                         commitHashInput.value = '';
                         buildCommandInput.value = '';
                     })
@@ -48,6 +56,24 @@
             body: JSON.stringify(data)
         })
         .then(res => res.json());
+    }
+
+    function addRow(tableID, build, status, link) {
+        // Get a reference to the table
+        let tableRef = document.getElementById(tableID);
+
+        // Insert a row at the end of the table
+        let newRow = tableRef.insertRow(-1);
+
+        // Insert a cell in the row at index 0
+        let buildCell = newRow.insertCell(0);
+        let statusCell = newRow.insertCell(1);
+        let linkCell = newRow.insertCell(2);
+
+        // Append a text node to the cell
+        buildCell.appendChild(document.createTextNode(build));
+        statusCell.appendChild(document.createTextNode(status));
+        linkCell.appendChild(document.createTextNode(link));
     }
 </script>
 </body>
