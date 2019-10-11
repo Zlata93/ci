@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node agent_1 & node agent_2 & node agent_3",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Zlata Kotlova",

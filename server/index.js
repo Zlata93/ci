@@ -2,6 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const handlebars = require('express-handlebars').create({ defaultLayout: 'main'});
 
+const agents = [];
+
 const app = express();
 
 app.engine('handlebars', handlebars.engine);
@@ -24,8 +26,12 @@ app.post('/build', (req, res) => {
 });
 
 app.get('/notify_agent', (req, res) => {
-    console.log(`Commit hash: ${req.query.host}`);
-    console.log(`Build command: ${req.query.port}`);
+    console.log(`Host: ${req.query.host}`);
+    console.log(`Port: ${req.query.port}`);
+    const { host, port } = req.query;
+    const agent = { host, port, isFree: true };
+    agents.push(agent);
+    console.log(agents);
     res.json({ status: 'Success' });
 });
 
