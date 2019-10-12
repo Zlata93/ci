@@ -38,7 +38,7 @@ app.post('/build', (req, res) => {
         const agent = freeAgents[0];
         agent.isFree = false;
         axios
-            .get(`http://${agent.host}:${agent.port}/build?id=${generateId()}&repo=${repo}&commit_hash=${commit_hash}&build_command=${build_command}`)
+            .get(`http://${agent.host}:${agent.port}/build?id=${generateId()}&repo=${repo}&commit_hash=${commit_hash}&build_command=${encodeURIComponent(build_command)}`)
             .then(response => {
                 // console.log(response.data);
                 res.send(response.data);

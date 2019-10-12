@@ -39,7 +39,7 @@ app.get('/build', (req, res) => {
         if (error) {
             return res.json({ status: 'Failed', error });
         } else {
-            const child = spawn(`cd ${id} && npm i && ${build_command} && echo $?`, { shell: true });
+            const child = spawn(`cd ${id} && ${build_command} && echo $?`, { shell: true });
             let output = '';
             let err = null;
             child.stdout.on('data', (data) => {
@@ -52,13 +52,13 @@ app.get('/build', (req, res) => {
             // });
             child.on('exit', (code, signal) =>  {
                 const status = code === 0 ? 'Success' : 'Failure';
-                axios.get(`http://localhost:${hostPort}/notify_build_result?port=${port1}&id=${id}&status=${status}&stdout=${output}&stderr=${err}`)
+                axios.get(`http://localhost:${hostPort}/notify_build_result?port=${port1}&id=${id}&status=${status}&stdout=${encodeURIComponent(output)}&stderr=${encodeURIComponent(err)}`)
                     .then(response => {
                         console.log('Response to agent after build: ', response.data);
                         res.send(response.data);
                     })
                     .catch(error => {
-                        console.log('ERROR');
+                        console.log('ERROR: ', error);
                         res.send({ error });
                     });
                 // res.send({ error: err, output });
