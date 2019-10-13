@@ -18,6 +18,14 @@ const getBuildInfo = (buildId, cb) => {
     return cb(null, build[0]);
 };
 
+const freePort = (port) => {
+    for (let agent of agents) {
+        if (agent.port === port) {
+            agent.isFree = true;
+        }
+    }
+};
+
 const app = express();
 
 app.engine('handlebars', handlebars.engine);
@@ -28,11 +36,6 @@ app.set('port', process.env.PORT || port);
 app.use(express.static(__dirname + '/public'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
-// app.use((req, res, next) => {
-//     if (!res.locals.partials) res.locals.partials = {};
-//     res.locals.partials
-// });
 
 app.get('/', (req, res) => {
     res.render('home', { builds });
@@ -53,17 +56,10 @@ app.post('/build', (req, res) => {
         axios
             .get(`http://${agent.host}:${agent.port}/build?id=${generateId()}&repo=${repo}&commit_hash=${commit_hash}&build_command=${encodeURIComponent(build_command)}`)
             .then(response => {
-                // console.log(response.data);
                 const endTime = new Date().toLocaleTimeString();
 
                 if (response.data.error) {
-                    for (let agent of agents) {
-                        console.log('agent: ' + agent.port + ' port: ' + response.data.port);
-                        if (agent.port === response.data.port) {
-                            console.log('here');
-                            agent.isFree = true;
-                        }
-                    }
+                    freePort(response.data.port);
                 }
 
                 const buildInfo = response.data;
@@ -84,26 +80,19 @@ app.post('/build', (req, res) => {
 });
 
 app.get('/notify_agent', (req, res) => {
-    console.log(`Host: ${req.query.host}`);
-    console.log(`Port: ${req.query.port}`);
+    // console.log(`Host: ${req.query.host}`);
+    // console.log(`Port: ${req.query.port}`);
     const { host, port } = req.query;
     const agent = { host, port, isFree: true };
     agents.push(agent);
-    console.log(agents);
     res.json({ status: 'Success' });
 });
 
 app.get('/notify_build_result', (req, res) => {
-    console.log(`Id: ${req.query.id}`);
-    console.log(`Status: ${req.query.status}`);
-    // console.log(`stdout: ${req.query.stdout}`);
-    // console.log(`stderr : ${req.query.stderr }`);
+    // console.log(`Id: ${req.query.id}`);
+    // console.log(`Status: ${req.query.status}`);
     const { id, status, stdout, stderr, port } = req.query;
-    for (let agent of agents) {
-        if (agent.port === port) {
-            agent.isFree = true;
-        }
-    }
+    freePort(port);
     res.send({ id, status, stdout, stderr });
 });
 

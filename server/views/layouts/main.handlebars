@@ -73,8 +73,8 @@
         const linkCell = newRow.insertCell(2);
 
         const linkEl = document.createElement('a');
-        linkEl.href = link;
-        const linkText = document.createTextNode(link);
+        linkEl.href = link ? link : '';
+        const linkText = document.createTextNode(link || '');
         linkEl.appendChild(linkText);
 
         // Append a text node to the cell
