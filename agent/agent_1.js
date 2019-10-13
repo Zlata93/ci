@@ -1,17 +1,19 @@
 const express = require('express');
 const { exec, spawn } = require('child_process');
 const axios = require('axios');
+const rimraf = require('rimraf');
 const { port1, hostPort } = require('./config');
 
 const app = express();
 
 app.set('port', process.env.PORT || port1);
 
-let isRegisterSuccess = true;
+let isRegisterSuccess = false;
 
 const registerAgent = () => {
     axios.get(`http://localhost:${hostPort}/notify_agent?host=localhost&port=${port1}`)
         .then(res => {
+            isRegisterSuccess = true;
             console.log(res.data);
             console.log(res.status);
         }).catch(err => {
@@ -22,11 +24,15 @@ const registerAgent = () => {
 
 registerAgent();
 
-setTimeout(() => {
+const interval = setInterval(() => {
     if (!isRegisterSuccess) {
         registerAgent();
     }
-}, 10000);
+}, 5000);
+
+if (isRegisterSuccess) {
+    clearInterval(interval)
+}
 
 app.get('/build', (req, res) => {
     console.log(`id: ${req.query.id}`);
@@ -37,7 +43,7 @@ app.get('/build', (req, res) => {
 
     exec(`git clone --single-branch --branch ${commit_hash} ${repo} ${id}`, (error, stdout, stderr) => {
         if (error) {
-            return res.json({ status: 'Failed', error });
+            return res.json({ status: 'Failed', error, id, stdout, stderr, port: port1 });
         } else {
             const child = spawn(`cd ${id} && ${build_command} && echo $?`, { shell: true });
             let output = '';
@@ -48,20 +54,26 @@ app.get('/build', (req, res) => {
             child.stderr.on('data', (data) => {
                 err += data.toString();
             });
-            // child.stdout.on('end', () => {
-            // });
             child.on('exit', (code, signal) =>  {
                 const status = code === 0 ? 'Success' : 'Failure';
+
+                rimraf(`./${id}`, (err) => {
+                    if (err) {
+                        console.log('Failed to delete dir: ', err);
+                    }
+                });
+
                 axios.get(`http://localhost:${hostPort}/notify_build_result?port=${port1}&id=${id}&status=${status}&stdout=${encodeURIComponent(output)}&stderr=${encodeURIComponent(err)}`)
                     .then(response => {
-                        console.log('Response to agent after build: ', response.data);
                         res.send(response.data);
                     })
                     .catch(error => {
-                        console.log('ERROR: ', error);
-                        res.send({ error });
+                        // console.log('ERROR: ', error);
+                        if (error.code === 'ECONNREFUSED') {
+                            isRegisterSuccess = false;
+                        }
+                        res.send({ error, id, stdout: '', stderr: '' });
                     });
-                // res.send({ error: err, output });
             });
         }
     });

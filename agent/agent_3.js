@@ -62,15 +62,16 @@ app.get('/build', (req, res) => {
             });
             child.on('exit', (code, signal) =>  {
                 // console.log('id', id);
-                let hasSent = false;
-                console.log('output', output);
+                // console.log('output', output);
                 // console.log('err', err);
                 const status = code === 0 ? 'Success' : 'Failure';
+
                 rimraf(`./${id}`, (err) => {
                     if (err) {
                         console.log('Failed to delete dir: ', err);
                     }
                 });
+
                 axios.get(`http://localhost:${hostPort}/notify_build_result?port=${port3}&id=${id}&status=${status}&stdout=${encodeURIComponent(output)}&stderr=${encodeURIComponent(err)}`)
                     .then(response => {
                         res.send(response.data);
@@ -85,10 +86,6 @@ app.get('/build', (req, res) => {
             });
         }
     });
-});
-
-app.get('/ping', (req, res) => {
-    res.send({ status: 1 });
 });
 
 app.listen(app.get('port'), () => {
