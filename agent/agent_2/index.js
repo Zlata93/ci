@@ -48,8 +48,6 @@ app.get('/build', (req, res) => {
             child.stderr.on('data', (data) => {
                 err += data.toString();
             });
-            // child.stdout.on('end', () => {
-            // });
             child.on('exit', (code, signal) =>  {
                 const status = code === 0 ? 'Success' : 'Failure';
                 axios.get(`http://localhost:${hostPort}/notify_build_result?port=${port2}&id=${id}&status=${status}&stdout=${encodeURIComponent(output)}&stderr=${encodeURIComponent(err)}`)
@@ -61,7 +59,6 @@ app.get('/build', (req, res) => {
                         console.log('ERROR: ', error);
                         res.send({ error });
                     });
-                // res.send({ error: err, output });
             });
         }
     });

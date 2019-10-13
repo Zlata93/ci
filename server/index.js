@@ -11,6 +11,13 @@ const generateId = () => {
 const agents = [];
 const builds = [];
 
+const getBuildInfo = (buildId, cb) => {
+    const build = builds.filter(build => build.id === buildId);
+    if (!build.length)
+        return cb(new Error(`Build with id ${buildId} is not found`));
+    return cb(null, build[0]);
+};
+
 const app = express();
 
 app.engine('handlebars', handlebars.engine);
@@ -22,8 +29,13 @@ app.use(express.static(__dirname + '/public'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+// app.use((req, res, next) => {
+//     if (!res.locals.partials) res.locals.partials = {};
+//     res.locals.partials
+// });
+
 app.get('/', (req, res) => {
-    res.render('home');
+    res.render('home', { builds });
 });
 
 app.post('/build', (req, res) => {
@@ -37,11 +49,30 @@ app.post('/build', (req, res) => {
     if (freeAgents.length) {
         const agent = freeAgents[0];
         agent.isFree = false;
+        const startTime = new Date().toLocaleTimeString();
         axios
             .get(`http://${agent.host}:${agent.port}/build?id=${generateId()}&repo=${repo}&commit_hash=${commit_hash}&build_command=${encodeURIComponent(build_command)}`)
             .then(response => {
                 // console.log(response.data);
-                res.send(response.data);
+                const endTime = new Date().toLocaleTimeString();
+
+                if (response.data.error) {
+                    for (let agent of agents) {
+                        console.log('agent: ' + agent.port + ' port: ' + response.data.port);
+                        if (agent.port === response.data.port) {
+                            console.log('here');
+                            agent.isFree = true;
+                        }
+                    }
+                }
+
+                const buildInfo = response.data;
+                buildInfo.commit_hash = commit_hash;
+                buildInfo.build_command = build_command;
+                buildInfo.start_time = startTime;
+                buildInfo.end_time = endTime;
+                builds.push(buildInfo);
+                res.send(buildInfo);
             })
             .catch(err => {
                 console.log(err);
@@ -73,8 +104,18 @@ app.get('/notify_build_result', (req, res) => {
             agent.isFree = true;
         }
     }
-    builds.push({ id, status, stdout, stderr });
     res.send({ id, status, stdout, stderr });
+});
+
+app.get('/build/:buildId', (req, res, next) => {
+    const { buildId } = req.params;
+    getBuildInfo(buildId, (error, build) => {
+        if (error) {
+            return res.send({ error });
+        } else {
+            return res.render('build', { build });
+        }
+    });
 });
 
 app.use((req, res) => {

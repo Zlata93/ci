@@ -1,0 +1,31 @@
+<h1>Build {{build.id}} details</h1>
+<div class="container mt-5">
+    <table class="table" id="table">
+        <thead>
+        <tr>
+            <th scope="col">Commit hash</th>
+            <th scope="col">Start time</th>
+            <th scope="col">End time</th>
+            <th scope="col">Status</th>
+            <th scope="col">Build Command</th>
+        </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td scope="col">{{build.commit_hash}}</td>
+                <td scope="col">{{build.start_time}}</td>
+                <td scope="col">{{build.end_time}}</td>
+                <td scope="col">{{build.status}}</td>
+                <td scope="col">{{build.build_command}}</td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="container mt-3">
+        <h3>STDOUT</h3>
+        {{build.stdout}}
+    </div>
+    <div class="container mt-5">
+        <h3>STDERR</h3>
+        {{build.stderr}}
+    </div>
+</div>
