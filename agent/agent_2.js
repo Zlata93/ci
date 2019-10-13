@@ -1,16 +1,16 @@
 const express = require('express');
-const { exec, spawn } = require('child_process');
 const axios = require('axios');
-const { port1, hostPort } = require('../config');
+const { exec, spawn } = require('child_process');
+const { port2, hostPort } = require('./config');
 
 const app = express();
 
-app.set('port', process.env.PORT || port1);
+app.set('port', process.env.PORT || port2);
 
 let isRegisterSuccess = true;
 
 const registerAgent = () => {
-    axios.get(`http://localhost:${hostPort}/notify_agent?host=localhost&port=${port1}`)
+    axios.get(`http://localhost:${hostPort}/notify_agent?host=localhost&port=${port2}`)
         .then(res => {
             console.log(res.data);
             console.log(res.status);
@@ -48,11 +48,9 @@ app.get('/build', (req, res) => {
             child.stderr.on('data', (data) => {
                 err += data.toString();
             });
-            // child.stdout.on('end', () => {
-            // });
             child.on('exit', (code, signal) =>  {
                 const status = code === 0 ? 'Success' : 'Failure';
-                axios.get(`http://localhost:${hostPort}/notify_build_result?port=${port1}&id=${id}&status=${status}&stdout=${encodeURIComponent(output)}&stderr=${encodeURIComponent(err)}`)
+                axios.get(`http://localhost:${hostPort}/notify_build_result?port=${port2}&id=${id}&status=${status}&stdout=${encodeURIComponent(output)}&stderr=${encodeURIComponent(err)}`)
                     .then(response => {
                         console.log('Response to agent after build: ', response.data);
                         res.send(response.data);
@@ -61,7 +59,6 @@ app.get('/build', (req, res) => {
                         console.log('ERROR: ', error);
                         res.send({ error });
                     });
-                // res.send({ error: err, output });
             });
         }
     });

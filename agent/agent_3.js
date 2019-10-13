@@ -1,19 +1,20 @@
 const express = require('express');
 const axios = require('axios');
+const rimraf = require('rimraf');
 const { exec, spawn } = require('child_process');
-const { port2, hostPort } = require('../config');
+const { port3, hostPort } = require('./config');
 
 const app = express();
 
-app.set('port', process.env.PORT || port2);
+app.set('port', process.env.PORT || port3);
 
 let isRegisterSuccess = true;
 
 const registerAgent = () => {
-    axios.get(`http://localhost:${hostPort}/notify_agent?host=localhost&port=${port2}`)
+    axios.get(`http://localhost:${hostPort}/notify_agent?host=localhost&port=${port3}`)
         .then(res => {
             console.log(res.data);
-            console.log(res.status);
+            // console.log(res.status);
         }).catch(err => {
         isRegisterSuccess = false;
         console.log('error');
@@ -37,7 +38,7 @@ app.get('/build', (req, res) => {
 
     exec(`git clone --single-branch --branch ${commit_hash} ${repo} ${id}`, (error, stdout, stderr) => {
         if (error) {
-            return res.json({ status: 'Failed', error });
+            return res.json({ status: 'Failed', error, id, stdout, stderr, port: port3 });
         } else {
             const child = spawn(`cd ${id} && ${build_command} && echo $?`, { shell: true });
             let output = '';
@@ -49,15 +50,23 @@ app.get('/build', (req, res) => {
                 err += data.toString();
             });
             child.on('exit', (code, signal) =>  {
+                // console.log('id', id);
+                // console.log('output', output);
+                // console.log('err', err);
                 const status = code === 0 ? 'Success' : 'Failure';
-                axios.get(`http://localhost:${hostPort}/notify_build_result?port=${port2}&id=${id}&status=${status}&stdout=${encodeURIComponent(output)}&stderr=${encodeURIComponent(err)}`)
+                rimraf(`./${id}`, (err) => {
+                    if (err) {
+                        console.log('Failed to delete dir: ', err);
+                    }
+                });
+                axios.get(`http://localhost:${hostPort}/notify_build_result?port=${port3}&id=${id}&status=${status}&stdout=${encodeURIComponent(output)}&stderr=${encodeURIComponent(err)}`)
                     .then(response => {
-                        console.log('Response to agent after build: ', response.data);
+                        // console.log('Response to agent after build: ', response.data);
                         res.send(response.data);
                     })
                     .catch(error => {
-                        console.log('ERROR: ', error);
-                        res.send({ error });
+                        // console.log('ERROR: ', error);
+                        res.send({ error, id, stdout: '', stderr: '' });
                     });
             });
         }

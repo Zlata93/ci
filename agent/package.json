@@ -4,13 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node agent_1/index & node agent_2/index & node agent_3/index",
+    "start": "node agent_1 & node agent_2 & node agent_3",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Zlata Kotlova",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.19.0",
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "rimraf": "^3.0.0"
   }
 }
