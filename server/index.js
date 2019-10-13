@@ -8,7 +8,7 @@ const generateId = () => {
     return '_' + Math.random().toString(36).substr(2, 5);
 };
 
-const agents = [];
+let agents = [];
 const builds = [];
 
 const getBuildInfo = (buildId, cb) => {
@@ -53,14 +53,13 @@ app.post('/build', (req, res) => {
         const agent = freeAgents[0];
         agent.isFree = false;
         const startTime = new Date().toLocaleTimeString();
+
         axios
             .get(`http://${agent.host}:${agent.port}/build?id=${generateId()}&repo=${repo}&commit_hash=${commit_hash}&build_command=${encodeURIComponent(build_command)}`)
             .then(response => {
                 const endTime = new Date().toLocaleTimeString();
 
-                if (response.data.error) {
-                    freePort(response.data.port);
-                }
+                agent.isFree = true;
 
                 const buildInfo = response.data;
                 buildInfo.commit_hash = commit_hash;
@@ -72,7 +71,20 @@ app.post('/build', (req, res) => {
             })
             .catch(err => {
                 console.log(err);
-                res.json({ status: 'Build failed' });
+                const buildInfo = {
+                    commit_hash,
+                    build_command,
+                    start_time: startTime,
+                    end_time: new Date().toLocaleTimeString(),
+                    status: 'Failure',
+                    stdout: '',
+                    stderr: '',
+                    error: err,
+                    id: generateId()
+                };
+                builds.push(buildInfo);
+                agents = agents.filter(item => item.port !== agent.port);
+                res.json(buildInfo);
             })
     } else {
         res.json({ status: 'Occupied' });

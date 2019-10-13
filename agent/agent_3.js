@@ -8,11 +8,12 @@ const app = express();
 
 app.set('port', process.env.PORT || port3);
 
-let isRegisterSuccess = true;
+let isRegisterSuccess = false;
 
 const registerAgent = () => {
     axios.get(`http://localhost:${hostPort}/notify_agent?host=localhost&port=${port3}`)
         .then(res => {
+            isRegisterSuccess = true;
             console.log(res.data);
             // console.log(res.status);
         }).catch(err => {
@@ -23,11 +24,21 @@ const registerAgent = () => {
 
 registerAgent();
 
-setTimeout(() => {
+const interval = setInterval(() => {
     if (!isRegisterSuccess) {
         registerAgent();
     }
-}, 10000);
+}, 5000);
+
+if (isRegisterSuccess) {
+    clearInterval(interval)
+}
+
+// setTimeout(() => {
+//     if (!isRegisterSuccess) {
+//         registerAgent();
+//     }
+// }, 10000);
 
 app.get('/build', (req, res) => {
     console.log(`id: ${req.query.id}`);
@@ -51,7 +62,8 @@ app.get('/build', (req, res) => {
             });
             child.on('exit', (code, signal) =>  {
                 // console.log('id', id);
-                // console.log('output', output);
+                let hasSent = false;
+                console.log('output', output);
                 // console.log('err', err);
                 const status = code === 0 ? 'Success' : 'Failure';
                 rimraf(`./${id}`, (err) => {
@@ -61,16 +73,22 @@ app.get('/build', (req, res) => {
                 });
                 axios.get(`http://localhost:${hostPort}/notify_build_result?port=${port3}&id=${id}&status=${status}&stdout=${encodeURIComponent(output)}&stderr=${encodeURIComponent(err)}`)
                     .then(response => {
-                        // console.log('Response to agent after build: ', response.data);
                         res.send(response.data);
                     })
                     .catch(error => {
                         // console.log('ERROR: ', error);
+                        if (error.code === 'ECONNREFUSED') {
+                            isRegisterSuccess = false;
+                        }
                         res.send({ error, id, stdout: '', stderr: '' });
                     });
             });
         }
     });
+});
+
+app.get('/ping', (req, res) => {
+    res.send({ status: 1 });
 });
 
 app.listen(app.get('port'), () => {
